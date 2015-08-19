@@ -7,7 +7,8 @@ const ideographicSpaceChar = 0x3000;
 
 function toFullWidth(chars) {
   let aesthetic = '';
-  for(var c of chars) {
+  for(var i=0, l=chars.length; i<l; i++) {
+    var c = chars[i].charCodeAt(0);
     // don't convert non-ASCII
     if (c != spaceChar && c <= asciiEndChar) {
       c += fullWidthCharOffset;
@@ -66,8 +67,8 @@ function modifyElementText(element, find, replace){
       selectElement(foundElement);
   } else {
     // Flow down the DOM tree - used for Facebook comments box and other areas where the DOM isn't quite as sensible as we'd like
-    for (var childNode in element.childNodes) {
-      modifyElementText(childNode, find, replace);
+    for (var i = 0; i < element.childNodes.length; i++) {
+      modifyElementText(element.childNodes[i], find, replace);
     }
   }
 }
