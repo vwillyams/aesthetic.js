@@ -62,10 +62,7 @@ function modifyElementText(element, find, replace){
     }
   }
 
-  if (found) {    
-    // Need to reselect the contents of the element so we can hijack the clipboard
-      selectElement(foundElement);
-  } else {
+  if (!found) {
     // Flow down the DOM tree - used for Facebook comments box and other areas where the DOM isn't quite as sensible as we'd like
     for (var i = 0; i < element.childNodes.length; i++) {
       modifyElementText(element.childNodes[i], find, replace);
@@ -73,7 +70,17 @@ function modifyElementText(element, find, replace){
   }
 }
 
-document.body.addEventListener("keydown", function (event) {
+function createClipboardBuffer() {
+  var node = document.createElement('input');
+  node.setAttribute('type', 'hidden')
+  document.body.appendChild(node);
+  window.getSelection().removeAllRanges();
+  node.select();
+  document.execCommand('paste');
+  return node;
+}
+
+document.body.addEventListener('keydown', function (event) {
 
   // Only active if Ctrl + Shift + A is pressed (TODO identify best practice)
   if (event.ctrlKey !== true || event.shiftKey !== true || event.keyCode !== 65) {
@@ -86,6 +93,8 @@ document.body.addEventListener("keydown", function (event) {
   let originalRange = selection.getRangeAt(0);
   let text = selection.toString();
 
+  var clipboardBuffer = createClipboardBuffer();
+
   if (text.length) {    
     let selectedElement = selection.focusNode.childNodes[selection.focusOffset];
     if (!selectedElement) {
@@ -93,8 +102,13 @@ document.body.addEventListener("keydown", function (event) {
     }
     modifyElementText(selectedElement, text, toFullWidth(text));
     // Hijack the clipboard to get around security measures
-    document.execCommand("copy");
     setSelection(originalRange);
-    document.execCommand("paste");
+    document.execCommand('copy');
+    document.execCommand('paste');
+    // Restore the original clipboard state
+    clipboardBuffer.select();
+    document.execCommand('copy');
+    selection.removeAllRanges();
+    document.body.removeChild(clipboardBuffer);
   }
 }, false);
