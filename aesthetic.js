@@ -62,6 +62,7 @@ document.body.addEventListener("keydown", function (event) {
 
   // Get the selected text
   var selection = window.getSelection();
+  var originalRange = selection.getRangeAt(0);
   var text = selection.toString();
 
   if (text.length) {    
@@ -72,7 +73,11 @@ document.body.addEventListener("keydown", function (event) {
     modifyElementText(selectedElement, text, toFullWidth(text));
     // Hijack the clipboard to get around security measures
     document.execCommand("copy");
-    selectElement(selectedElement);
+    var range = document.createRange();
+    range.setStart(originalRange.startContainer, originalRange.startOffset);
+    range.setEnd(originalRange.endContainer, originalRange.endOffset);
+    selection.removeAllRanges();
+    selection.addRange(range);
     document.execCommand("paste");
   }
 }, false);
