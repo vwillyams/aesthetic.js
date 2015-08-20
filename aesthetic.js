@@ -75,6 +75,9 @@ document.body.addEventListener('keydown', function (event) {
   if (text.length) {
 
     var selectedElement = selection.focusNode.childNodes[selection.focusOffset];
+    if (!selectedElement) {
+      selectedElement = document.activeElement;
+    }
 
     let textBuffer = addBuffer(selectedElement.parentNode);
     textBuffer.innerText = toFullWidth(text);
@@ -83,11 +86,13 @@ document.body.addEventListener('keydown', function (event) {
     selectedElement.parentNode.removeChild(textBuffer);
 
     // Hijack the clipboard to get around security measures
-    selectElement(selectedElement);
-    console.log(selection);
-    document.execCommand('paste');
-    setSelection(originalRanges);
-    console.log(selection);
+    if (selectedElement.select) {
+      // Prefer element-specific selection method
+      selectElement(selectedElement);
+    } else {
+      // But if that's not available, do it manually...
+      setSelection(originalRanges);
+    }
     document.execCommand('paste');
 
     // Restore the original clipboard state
