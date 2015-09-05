@@ -21,8 +21,10 @@ function toFullWidth(chars) {
 }
 
 function addBuffer(element) {
-  var node = document.createElement('textarea');
+  var node = document.createElement('div');
+  node.contentEditable = true;
   element.appendChild(node);
+  node.unselectable = "off";
   return node;
 }
 
@@ -62,20 +64,23 @@ document.body.addEventListener('keydown', function (event) {
   // Get the selected text and store the selection range
   let selection = window.getSelection();
   let text = selection.toString();
-  // TODO this works but should be better
-  var originalRange = selection.getRangeAt(0);
 
   let selectedElement = selection.focusNode.childNodes[selection.focusOffset];
   if (!selectedElement) {
     selectedElement = document.activeElement;
   }
 
+  console.log(selection);
+
   let clipboardBuffer;
+  let clipboardText;
   try {
     clipboardBuffer = addBuffer(selectedElement.parentNode);
-    selectElement(clipboardBuffer);
-    document.execCommand('paste');
-    var clipboardText = clipboardBuffer.innerText;
+    clipboardBuffer.focus();
+    document.execCommand('SelectAll');
+    document.execCommand('Paste');
+    clipboardText = clipboardBuffer.innerText;
+    console.log(clipboardText);
   } finally {
     removeElement(clipboardBuffer);
   }
@@ -86,23 +91,26 @@ document.body.addEventListener('keydown', function (event) {
     try {
       textBuffer = addBuffer(selectedElement.parentNode);
       textBuffer.innerText = toFullWidth(text);
-      selectElement(textBuffer);
-      document.execCommand('copy');
+      textBuffer.focus();
+      document.execCommand('SelectAll');
+      document.execCommand('Copy');
     } finally {
       removeElement(textBuffer);
     }
+
     // Hijack the clipboard to get around security measures
-    setSelection(originalRange);
-    document.execCommand('paste');
+    selectedElement.focus();
+    document.execCommand('SelectAll');
+    document.execCommand('Paste');
 
     // Restore the original clipboard state
     let clipboardBuffer;
     try {
-      clipboardBuffer = addBuffer(document.body.childNodes[0]);
+      clipboardBuffer = addBuffer(selectedElement.parentNode);
       clipboardBuffer.innerText = clipboardText;
-      selectElement(clipboardBuffer);
-      document.execCommand('copy');
-      selection.removeAllRanges();
+      clipboardBuffer.focus();
+      document.execCommand('SelectAll');
+      document.execCommand('Copy');
     } finally {
       removeElement(clipboardBuffer);
     }
