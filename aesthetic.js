@@ -28,30 +28,34 @@ function addBuffer(element) {
   return node;
 }
 
-// Selects an element, removing all other selections
-function selectElement(element) {
-  let selection = window.getSelection();
-  selection.removeAllRanges();
-  element.select();
-}
-
-// Creates a copy of a Range object (since it's possible that the original range has expired)
-// and sets window.selection to contain that range
-function setSelection(selectionRange) {
-  let selection = window.getSelection();
-  selection.removeAllRanges();
-
-  let range = document.createRange();
-  range.setStart(selectionRange.startContainer, selectionRange.startOffset);
-  range.setEnd(selectionRange.endContainer, selectionRange.endOffset);
-
-  selection.addRange(range);
-}
-
 function removeElement(element) {
   if (element && element.parentNode) {
     element.parentNode.removeChild(element);
   }
+}
+
+function replaceText(selectedElement){
+  selectedElement.focus();
+  document.execCommand('SelectAll');
+  document.execCommand('Copy');
+
+  let textBuffer;
+  try {
+    textBuffer = addBuffer(selectedElement.parentNode);
+    textBuffer.focus();
+    document.execCommand('SelectAll');
+    document.execCommand('Paste');
+    textBuffer.innerText = toFullWidth(textBuffer.innerText);
+    document.execCommand('SelectAll');
+    document.execCommand('Copy');
+  } finally {
+    removeElement(textBuffer);
+  }
+
+  // IMPORTANT: Hijacks the clipboard to mimic user input
+  selectedElement.focus();
+  document.execCommand('SelectAll');
+  document.execCommand('Paste');
 }
 
 document.body.addEventListener('keydown', function (event) {
@@ -63,51 +67,29 @@ document.body.addEventListener('keydown', function (event) {
 
   // Get the selected text and store the selection range
   let selection = window.getSelection();
-  let text = selection.toString();
 
   let selectedElement = selection.focusNode.childNodes[selection.focusOffset];
   if (!selectedElement) {
     selectedElement = document.activeElement;
   }
+  let text = selection.toString();
 
-  console.log(selection);
+  if (text && text.length) {
 
-  let clipboardBuffer;
-  let clipboardText;
-  try {
-    clipboardBuffer = addBuffer(selectedElement.parentNode);
-    clipboardBuffer.focus();
-    document.execCommand('SelectAll');
-    document.execCommand('Paste');
-    clipboardText = clipboardBuffer.innerText;
-    console.log(clipboardText);
-  } finally {
-    removeElement(clipboardBuffer);
-  }
-
-  if (text.length) {
-
-    let textBuffer;
-    try {
-      textBuffer = addBuffer(selectedElement.parentNode);
-      textBuffer.innerText = toFullWidth(text);
-      textBuffer.focus();
-      document.execCommand('SelectAll');
-      document.execCommand('Copy');
-    } finally {
-      removeElement(textBuffer);
-    }
-
-    // Hijack the clipboard to get around security measures
-    selectedElement.focus();
-    document.execCommand('SelectAll');
-    document.execCommand('Paste');
-
-    // Restore the original clipboard state
+    // Store clipboard state in an external buffer
     let clipboardBuffer;
+    let clipboardText;
     try {
       clipboardBuffer = addBuffer(selectedElement.parentNode);
-      clipboardBuffer.innerText = clipboardText;
+      clipboardBuffer.focus();
+      document.execCommand('SelectAll');
+      document.execCommand('Paste');
+      clipboardText = clipboardBuffer.innerText;
+
+      // Perform the actual text modification
+      replaceText(selectedElement);
+
+      // Restore the original clipboard state
       clipboardBuffer.focus();
       document.execCommand('SelectAll');
       document.execCommand('Copy');
